@@ -1,0 +1,115 @@
+>>>malloy
+source: clutch_stats_raw is duckdb.table('"clutch_2021_2025_combined.csv"')
+
+
+source: clutch_stats is clutch_stats_raw -> {
+  select:
+    Name,
+    Team,
+    Season,
+    PA,
+    `AVG`,
+    OBP,
+    SLG,
+    wOBA,
+    `wRC+`,
+    WPA,
+    `+WPA`,
+    `-WPA`,
+    `WPA/LI`,
+    pLI,
+    Clutch,
+    `BB%`,
+    `K%`,
+    WAR
+} extend {
+  dimension: clutch_score is `+WPA` + `WPA/LI` + Clutch * pLI
+
+  measure: total_WAR is WAR.sum()
+  measure: total_WPA is WPA.sum()
+  measure: total_clutch_score is clutch_score.sum()
+  measure: avg_clutch_score is clutch_score.avg()
+  measure: count_players is count()
+}
+>>>malloy
+run: clutch_stats -> {
+  group_by: Name
+  aggregate: 
+    total_clutch_score
+    total_WAR
+    total_PA is PA.sum()
+  order_by: total_clutch_score desc
+  limit: 15
+}
+>>>malloy
+# bar_chart
+run: clutch_stats -> {
+  group_by: Team
+  aggregate: avg_clutch is clutch_score.avg()
+  order_by: avg_clutch desc
+  limit: 10
+}
+>>>malloy
+# line_chart
+run: clutch_stats -> {
+  group_by: Season
+  aggregate: avg_clutch_score is clutch_score.avg()
+  order_by: Season
+}
+>>>malloy
+run: clutch_stats -> {
+  group_by: Name, Season
+  aggregate: total_clutch_score is clutch_score.sum()
+  order_by: total_clutch_score desc
+  limit: 10
+}
+>>>malloy
+# line_chart
+run: clutch_stats -> {
+  group_by: Season
+  aggregate:
+    avg_K_percent is `K%`.avg(),
+    avg_clutch_score is clutch_score.avg()
+  order_by: Season
+}
+>>>malloy
+# bar_chart
+run: clutch_stats -> {
+  group_by: Team
+  aggregate: total_clutch is clutch_score.sum()
+  order_by: total_clutch desc
+  limit: 15
+}
+>>>malloy
+# line_chart
+run: clutch_stats -> {
+  group_by: Season
+  aggregate:
+    avg_BB_percent is `BB%`.avg(),
+  order_by: Season
+}
+>>>malloy
+# line_chart
+run: clutch_stats -> {
+  group_by: Season
+  aggregate:
+    avg_K_percent is `K%`.avg()
+  order_by: Season
+}
+>>>malloy
+# bar_chart
+run: clutch_stats -> {
+  group_by: clutch_bucket is floor(clutch_score / 5) * 5
+  aggregate: avg_WAR is WAR.avg()
+  order_by: clutch_bucket
+}
+>>>malloy
+# bar_chart
+run: clutch_stats -> {
+  group_by: Name
+  aggregate: 
+    avg_BB is `BB%`.avg(),
+    total_WAR is WAR.sum()
+  order_by: avg_BB desc
+  limit: 20
+}

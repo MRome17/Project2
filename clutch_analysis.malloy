@@ -1,0 +1,31 @@
+source: clutch_stats_raw is duckdb.table('"clutch_2021_2025_combined.csv"')
+
+source: clutch_stats is clutch_stats_raw -> {
+  select:
+    Name,
+    Team,
+    Season,
+    PA,
+    `AVG`,
+    OBP,
+    SLG,
+    wOBA,
+    `wRC+`,
+    WPA,
+    `+WPA`,
+    `-WPA`,
+    `WPA/LI`,
+    pLI,
+    Clutch,
+    `BB%`,
+    `K%`,
+    WAR
+} extend {
+  dimension: clutch_score is `+WPA` + `WPA/LI` + Clutch * pLI
+
+  measure: total_WAR is WAR.sum()
+  measure: total_WPA is WPA.sum()
+  measure: total_clutch_score is clutch_score.sum()
+  measure: avg_clutch_score is clutch_score.avg()
+  measure: count_players is count()
+}
